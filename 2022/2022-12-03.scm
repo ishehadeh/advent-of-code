@@ -1,4 +1,4 @@
-(use-modules (ice-9 rdelim))
+(use-modules (ice-9 rdelim) (srfi srfi-1))
 
 (define split
     (case-lambda
@@ -29,25 +29,44 @@
                            (compartments (split all-items (/ (length all-items) 2))))
                         (decode-rucksacks port (append rucksacks (list compartments)))))))))
 
-(define duplicates
+(define decode-rucksacks
     (case-lambda
-        ((list0 list1) (duplicates list0 list1 list1 '()))
-        ((list0 list1 list1-full dups)
-            (cond
-                ((eqv? list0 '()) dups)
-                ((eqv? list1 '()) (duplicates (cdr list0) list1-full list1-full dups))
-                ((eqv? (car list0) (car list1))
-                    (duplicates list0 (cdr list1) list1-full (push-unique (car list0) dups)))
-                (else
-                    (duplicates list0 (cdr list1) list1-full dups))))))
+        ((port) (decode-rucksacks port '()))
+        ((port rucksacks)
+            (let ((line (read-line port 'trim)))
+                (if (eof-object? line) rucksacks
+                    (decode-rucksacks port (append rucksacks (list (map item->priority (string->list line))))))))))
+
+
+(define (split-compartments rucksack)
+    (split rucksack (/ (length rucksack) 2)))
+
+(define (get-badge group)
+    (find
+        (lambda (x)
+            (every (lambda (rucksack) (member x rucksack)) (cdr group)))
+        (car group)))
+
+(define (group-by lst n)
+    (fold-right
+        (lambda (x groups)
+            (if (< (length (car groups)) n)
+                (cons (append (car groups) (list x)) (cdr groups))
+                (cons (list x) groups)))
+        '(())
+        lst))
 
 (define (get-rucksacks)
     (decode-rucksacks  (open-input-file "data/3.rucksacks.txt")))
 
-(define (main)
-    (let* ((rucksacks-file  (open-input-file "data/3.rucksacks.txt"))
-           (rucksacks       (decode-rucksacks rucksacks-file))
-           (dups            (map (lambda (x) (apply duplicates x)) (get-rucksacks)))
+(define (main-part1)
+    (let* ((dups            (map (lambda (x) (apply duplicates x)) (map split-compartments (get-rucksacks))))
            (priority-total  (apply + (map (lambda (x) (apply + x)) dups))))
+        (display priority-total)
+        (newline)))
+
+(define (main-part2)
+    (let* ((groups          (group-by (get-rucksacks) 3))
+           (priority-total  (apply + (map get-badge groups))))
         (display priority-total)
         (newline)))
