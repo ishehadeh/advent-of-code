@@ -25,16 +25,6 @@
         ((port rucksacks)
             (let ((line (read-line port 'trim)))
                 (if (eof-object? line) rucksacks
-                    (let* ((all-items (map item->priority (string->list line)))
-                           (compartments (split all-items (/ (length all-items) 2))))
-                        (decode-rucksacks port (append rucksacks (list compartments)))))))))
-
-(define decode-rucksacks
-    (case-lambda
-        ((port) (decode-rucksacks port '()))
-        ((port rucksacks)
-            (let ((line (read-line port 'trim)))
-                (if (eof-object? line) rucksacks
                     (decode-rucksacks port (append rucksacks (list (map item->priority (string->list line))))))))))
 
 
